@@ -17,10 +17,11 @@
 #     jcarsique
 #
 
-version: "2"
+version: "2.2"
 services:
   db:
     image: mongo:3.4
+    cpus: 1
 
   tests:
     image: dockerpriv.nuxeo.com:443/nuxeo/jenkins-slave
@@ -33,3 +34,4 @@ services:
       - JAVA_OPTS=-Xms512m -Xmx3g
       - NX_MONGODB_SERVER=db:27017
     command: /sbin/my_init -- su - jenkins -c "$TESTS_COMMAND"
+    cpus: 1

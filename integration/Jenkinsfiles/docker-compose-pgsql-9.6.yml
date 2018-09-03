@@ -17,13 +17,14 @@
 #     jcarsique
 #
 
-version: "2"
+version: "2.2"
 services:
   db:
     image: postgres:9.6
     environment:
       - POSTGRES_USER=nxadmin
       - POSTGRES_PASSWORD=nuxeo
+    cpus: 1
 
   tests:
     image: dockerpriv.nuxeo.com:443/nuxeo/jenkins-slave
@@ -36,3 +37,4 @@ services:
       - JAVA_OPTS=-Xms512m -Xmx3g
       - NX_DB_HOST=db
     command: /sbin/my_init -- su - jenkins -c "$TESTS_COMMAND"
+    cpus: 1
