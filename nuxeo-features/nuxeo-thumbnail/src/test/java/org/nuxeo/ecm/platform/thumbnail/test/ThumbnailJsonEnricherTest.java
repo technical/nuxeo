@@ -66,6 +66,6 @@ public class ThumbnailJsonEnricherTest extends AbstractJsonWriterTest.Local<Docu
         json = json.has("thumbnail").isObject();
         json = json.has("url").isText();
         json.isEquals(String.format(ThumbnailJsonEnricher.THUMBNAIL_URL_PATTERN, "http://fake-url.nuxeo.com",
-                root.getRepositoryName(), root.getId(), root.getChangeToken()));
+                root.getRepositoryName(), root.getId()) + "?" + CoreSession.CHANGE_TOKEN + root.getChangeToken());
     }
 }

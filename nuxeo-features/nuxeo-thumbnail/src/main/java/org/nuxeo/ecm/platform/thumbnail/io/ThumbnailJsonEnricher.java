@@ -25,6 +25,7 @@ import static org.nuxeo.ecm.core.io.registry.reflect.Priorities.REFERENCE;
 import java.io.IOException;
 import java.net.URLEncoder;
 
+import org.apache.commons.lang3.StringUtils;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.io.marshallers.json.enrichers.AbstractJsonEnricher;
@@ -66,8 +67,7 @@ public class ThumbnailJsonEnricher extends AbstractJsonEnricher<DocumentModel> {
 
     public static final String THUMBNAIL_URL_LABEL = "url";
 
-    public static final String THUMBNAIL_URL_PATTERN = "%s/api/v1/repo/%s/id/%s/@rendition/thumbnail?"
-            + CoreSession.CHANGE_TOKEN + "=%s";
+    public static final String THUMBNAIL_URL_PATTERN = "%s/api/v1/repo/%s/id/%s/@rendition/thumbnail";
 
     public ThumbnailJsonEnricher() {
         super(NAME);
@@ -77,10 +77,13 @@ public class ThumbnailJsonEnricher extends AbstractJsonEnricher<DocumentModel> {
     public void write(JsonGenerator jg, DocumentModel document) throws IOException {
         jg.writeFieldName(NAME);
         jg.writeStartObject();
-        jg.writeStringField(THUMBNAIL_URL_LABEL,
-                String.format(THUMBNAIL_URL_PATTERN, ctx.getBaseUrl().replaceAll("/$", ""),
-                        document.getRepositoryName(), document.getId(),
-                        URLEncoder.encode(document.getChangeToken(), "UTF-8")));
+        String url = String.format(THUMBNAIL_URL_PATTERN, ctx.getBaseUrl().replaceAll("/$", ""),
+                document.getRepositoryName(), document.getId());
+        String ct = document.getChangeToken();
+        if (StringUtils.isNotBlank(ct)) {
+            url += '?' + CoreSession.CHANGE_TOKEN + URLEncoder.encode(ct, "UTF-8");
+        }
+        jg.writeStringField(THUMBNAIL_URL_LABEL, url);
         jg.writeEndObject();
 
     }
