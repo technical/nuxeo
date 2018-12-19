@@ -50,8 +50,7 @@ public class EsFetcher extends Fetcher {
     /**
      * @since 10.2
      */
-    public EsFetcher(CoreSession session, SearchResponse response, Map<String, String> repoNames,
-            HitDocConsumer consumer) {
+    public EsFetcher(CoreSession session, SearchResponse response, Map<String, String> repoNames, HitDocConsumer consumer) {
         super(session, response, repoNames);
         this.consumer = consumer;
     }
@@ -90,7 +89,6 @@ public class EsFetcher extends Fetcher {
 
     /**
      * Consumes both a SearchHit and DocumentModel.
-     *
      * @since 10.2
      */
     @FunctionalInterface

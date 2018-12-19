@@ -56,7 +56,6 @@ public abstract class AggregateEsBase<A extends Aggregation, B extends Bucket> e
 
     /**
      * Extract the aggregation from the Elasticsearch response
-     *
      * @since 10.3
      */
     public abstract void parseAggregation(A aggregation);

@@ -174,7 +174,6 @@ public class NxQueryBuilder {
 
     /**
      * If search results are found, use this SearchHit and DocumentModel consumer on each hit.
-     *
      * @since 10.2
      */
     public NxQueryBuilder hitDocConsumer(EsFetcher.HitDocConsumer consumer) {
