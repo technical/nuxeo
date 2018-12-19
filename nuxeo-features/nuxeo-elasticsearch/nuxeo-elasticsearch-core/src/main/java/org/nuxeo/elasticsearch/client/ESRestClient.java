@@ -18,6 +18,8 @@
  */
 package org.nuxeo.elasticsearch.client;
 
+import static java.util.Collections.emptyMap;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
@@ -25,7 +27,10 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
+import org.apache.http.entity.ContentType;
+import org.apache.http.nio.entity.NStringEntity;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.bulk.BulkProcessor;
@@ -42,8 +47,6 @@ import org.elasticsearch.action.search.ClearScrollResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -78,10 +81,9 @@ public class ESRestClient implements ESClient {
         ClusterHealthStatus healthStatus;
         Response response;
         try {
-            response = performRequest(
-                    new Request("GET",
+            response = lowLevelClient.performRequest("GET",
                     String.format("/_cluster/health/%s?wait_for_status=yellow&timeout=%ds",
-                                    getIndexesAsString(indexNames), timeoutSecond)));
+                            getIndexesAsString(indexNames), timeoutSecond));
             try (InputStream is = response.getEntity().getContent()) {
                 Map<String, Object> map = XContentHelper.convertToMap(XContentType.JSON.xContent(), is, true);
                 healthStatus = ClusterHealthStatus.fromString((String) map.get("status"));
@@ -109,11 +111,13 @@ public class ESRestClient implements ESClient {
 
     @Override
     public ClusterHealthStatus getHealthStatus(String[] indexNames) {
-        Response response = performRequest(
-                new Request("GET", String.format("/_cluster/health/%s", getIndexesAsString(indexNames))));
-        try (InputStream is = response.getEntity().getContent()) {
+        try {
+            Response response = lowLevelClient.performRequest("GET",
+                    String.format("/_cluster/health/%s", getIndexesAsString(indexNames)));
+            try (InputStream is = response.getEntity().getContent()) {
                 Map<String, Object> map = XContentHelper.convertToMap(XContentType.JSON.xContent(), is, true);
                 return ClusterHealthStatus.fromString((String) map.get("status"));
+            }
         } catch (IOException e) {
             throw new NuxeoException(e);
         }
@@ -121,51 +125,72 @@ public class ESRestClient implements ESClient {
 
     @Override
     public void refresh(String indexName) {
-        performRequest(new Request("POST", "/" + indexName + "/_refresh"));
+        try {
+            lowLevelClient.performRequest("POST", "/" + indexName + "/_refresh");
+        } catch (IOException e) {
+            throw new NuxeoException(e);
+        }
+
     }
 
     @Override
     public void flush(String indexName) {
-        performRequest(new Request("POST", "/" + indexName + "/_flush?wait_if_ongoing=true"));
+        try {
+            lowLevelClient.performRequest("POST", "/" + indexName + "/_flush?wait_if_ongoing=true");
+        } catch (IOException e) {
+            throw new NuxeoException(e);
+        }
     }
 
     @Override
     public void optimize(String indexName) {
-        performRequest(new Request("POST", "/" + indexName + "/_forcemerge?max_num_segments=1"));
+        try {
+            lowLevelClient.performRequest("POST", "/" + indexName + "/_forcemerge?max_num_segments=1");
+        } catch (IOException e) {
+            throw new NuxeoException(e);
+        }
     }
 
     @Override
     public boolean indexExists(String indexName) {
-        Response response = performRequest(new Request("HEAD", "/" + indexName));
-        switch (response.getStatusLine().getStatusCode()) {
-        case HttpStatus.SC_OK:
-            return true;
-        case HttpStatus.SC_NOT_FOUND:
-            return false;
-        default:
-            throw new IllegalStateException(String.format("Checking index %s returns: %s", indexName, response));
+        Response response;
+        try {
+            response = lowLevelClient.performRequest("HEAD", "/" + indexName);
+        } catch (IOException e) {
+            throw new NuxeoException(e);
         }
+        int code = response.getStatusLine().getStatusCode();
+        if (code == HttpStatus.SC_OK) {
+            return true;
+        } else if (code == HttpStatus.SC_NOT_FOUND) {
+            return false;
+        }
+        throw new IllegalStateException(String.format("Checking index %s returns: %s", indexName, response));
     }
 
     @Override
     public boolean mappingExists(String indexName, String type) {
-        Response response = performRequest(new Request("HEAD", String.format("/%s/_mapping/%s", indexName, type)));
-        switch (response.getStatusLine().getStatusCode()) {
-        case HttpStatus.SC_OK:
-            return true;
-        case HttpStatus.SC_NOT_FOUND:
-            return false;
-        default:
-            throw new IllegalStateException(String.format("Checking mapping %s returns: %s", indexName, response));
+        Response response;
+        try {
+            response = lowLevelClient.performRequest("HEAD", String.format("/%s/_mapping/%s", indexName, type));
+        } catch (IOException e) {
+            throw new NuxeoException(e);
         }
+        int code = response.getStatusLine().getStatusCode();
+        if (code == HttpStatus.SC_OK) {
+            return true;
+        } else if (code == HttpStatus.SC_NOT_FOUND) {
+            return false;
+        }
+        throw new IllegalStateException(String.format("Checking mapping %s returns: %s", indexName, response));
     }
 
     @Override
     public void deleteIndex(String indexName, int timeoutSecond) {
         Response response;
         try {
-            response = lowLevelClient.performRequest(
-                    new Request("DELETE", String.format("/%s?master_timeout=%ds", indexName, timeoutSecond)));
+            response = lowLevelClient.performRequest("DELETE",
+                    String.format("/%s?master_timeout=%ds", indexName, timeoutSecond));
         } catch (IOException e) {
             if (e.getMessage() != null && e.getMessage().contains("illegal_argument_exception")) {
                 // when trying to delete an alias, throws the same exception than the transport client
@@ -181,9 +206,14 @@ public class ESRestClient implements ESClient {
 
     @Override
     public void createIndex(String indexName, String jsonSettings) {
-        Request request = new Request("PUT", "/" + indexName + "?timeout=" + CREATE_INDEX_TIMEOUT);
-        request.setJsonEntity(jsonSettings);
-        Response response = performRequest(request);
+        HttpEntity entity = new NStringEntity(jsonSettings, ContentType.APPLICATION_JSON);
+        Response response;
+        try {
+            response = lowLevelClient.performRequest("PUT", "/" + indexName + "?timeout=" + CREATE_INDEX_TIMEOUT,
+                    emptyMap(), entity);
+        } catch (IOException e) {
+            throw new NuxeoException(e);
+        }
         if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
             throw new NuxeoException("Fail to create index: " + indexName + " :" + response);
         }
@@ -191,26 +221,24 @@ public class ESRestClient implements ESClient {
 
     @Override
     public void createMapping(String indexName, String type, String jsonMapping) {
-        Request request = new Request("PUT", String.format("/%s/%s/_mapping", indexName, type));
-        request.setJsonEntity(jsonMapping);
-        Response response = performRequest(request);
-        if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
-            throw new NuxeoException(String.format("Fail to create mapping on %s/%s: %s", indexName, type, response));
-        }
-    }
-
-    protected Response performRequest(Request request) {
+        HttpEntity entity = new NStringEntity(jsonMapping, ContentType.APPLICATION_JSON);
+        Response response;
         try {
-            return lowLevelClient.performRequest(request);
+            response = lowLevelClient.performRequest("PUT", String.format("/%s/%s/_mapping", indexName, type),
+                    emptyMap(), entity);
         } catch (IOException e) {
             throw new NuxeoException(e);
         }
+        if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
+            throw new NuxeoException(String.format("Fail to create mapping on %s/%s: %s", indexName, type, response));
+        }
+
     }
 
     @Override
     public String getNodesInfo() {
-        Response response = performRequest(new Request("GET", "/_nodes/_all"));
         try {
+            Response response = lowLevelClient.performRequest("GET", "/_nodes/_all");
             return EntityUtils.toString(response.getEntity());
         } catch (IOException e) {
             throw new NuxeoException(e);
@@ -219,8 +247,8 @@ public class ESRestClient implements ESClient {
 
     @Override
     public String getNodesStats() {
-        Response response = performRequest(new Request("GET", "/_nodes/stats"));
         try {
+            Response response = lowLevelClient.performRequest("GET", "/_nodes/stats");
             return EntityUtils.toString(response.getEntity());
         } catch (IOException e) {
             throw new NuxeoException(e);
@@ -229,15 +257,19 @@ public class ESRestClient implements ESClient {
 
     @Override
     public boolean aliasExists(String aliasName) {
-        Response response = performRequest(new Request("HEAD", String.format("/_alias/%s", aliasName)));
-        switch (response.getStatusLine().getStatusCode()) {
-        case HttpStatus.SC_OK:
-            return true;
-        case HttpStatus.SC_NOT_FOUND:
-            return false;
-        default:
-            throw new IllegalStateException(String.format("Checking alias %s returns: %s", aliasName, response));
+        Response response;
+        try {
+            response = lowLevelClient.performRequest("HEAD", String.format("/_alias/%s", aliasName));
+        } catch (IOException e) {
+            throw new NuxeoException(e);
         }
+        int code = response.getStatusLine().getStatusCode();
+        if (code == HttpStatus.SC_OK) {
+            return true;
+        } else if (code == HttpStatus.SC_NOT_FOUND) {
+            return false;
+        }
+        throw new IllegalStateException(String.format("Checking alias %s returns: %s", aliasName, response));
     }
 
     @Override
@@ -245,14 +277,16 @@ public class ESRestClient implements ESClient {
         if (!aliasExists(aliasName)) {
             return null;
         }
-        Response response = performRequest(new Request("GET", String.format("/_alias/%s", aliasName)));
-        try (InputStream is = response.getEntity().getContent()) {
-            Map<String, Object> map = XContentHelper.convertToMap(XContentType.JSON.xContent(), is, true);
+        try {
+            Response response = lowLevelClient.performRequest("GET", String.format("/_alias/%s", aliasName));
+            try (InputStream is = response.getEntity().getContent()) {
+                Map<String, Object> map = XContentHelper.convertToMap(XContentType.JSON.xContent(), is, true);
                 if (map.size() != 1) {
                     throw new NuxeoException(String.format(
                             "Expecting alias that point to a single index, alias: %s, got: %s", aliasName, response));
                 }
                 return map.keySet().iterator().next();
+            }
         } catch (IOException e) {
             throw new NuxeoException(e);
         }
@@ -271,7 +305,12 @@ public class ESRestClient implements ESClient {
     }
 
     protected void deleteAlias(String aliasName) {
-        Response response = performRequest(new Request("DELETE", String.format("/_all/_alias/%s", aliasName)));
+        Response response;
+        try {
+            response = lowLevelClient.performRequest("DELETE", String.format("/_all/_alias/%s", aliasName));
+        } catch (IOException e) {
+            throw new NuxeoException(e);
+        }
         int code = response.getStatusLine().getStatusCode();
         if (code != HttpStatus.SC_OK) {
             throw new IllegalStateException(String.format("Deleting %s alias: %s", aliasName, response));
@@ -279,7 +318,13 @@ public class ESRestClient implements ESClient {
     }
 
     protected void createAlias(String aliasName, String indexName) {
-        Response response = performRequest(new Request("PUT", String.format("/%s/_alias/%s", indexName, aliasName)));
+        Response response;
+        try {
+            response = lowLevelClient.performRequest("PUT", String.format("/%s/_alias/%s", indexName, aliasName),
+                    emptyMap());
+        } catch (IOException e) {
+            throw new NuxeoException(e);
+        }
         if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
             throw new NuxeoException("Fail to create alias: " + indexName + " :" + response);
         }
@@ -288,7 +333,7 @@ public class ESRestClient implements ESClient {
     @Override
     public BulkResponse bulk(BulkRequest request) {
         try {
-            return client.bulk(request, RequestOptions.DEFAULT);
+            return client.bulk(request);
         } catch (IOException e) {
             throw new NuxeoException(e);
         }
@@ -297,7 +342,7 @@ public class ESRestClient implements ESClient {
     @Override
     public DeleteResponse delete(DeleteRequest request) {
         try {
-            return client.delete(request, RequestOptions.DEFAULT);
+            return client.delete(request);
         } catch (IOException e) {
             throw new NuxeoException(e);
         }
@@ -306,7 +351,7 @@ public class ESRestClient implements ESClient {
     @Override
     public SearchResponse search(SearchRequest request) {
         try {
-            return client.search(request, RequestOptions.DEFAULT);
+            return client.search(request);
         } catch (IOException e) {
             throw new NuxeoException(e);
         }
@@ -315,7 +360,7 @@ public class ESRestClient implements ESClient {
     @Override
     public SearchResponse searchScroll(SearchScrollRequest request) {
         try {
-            return client.scroll(request, RequestOptions.DEFAULT);
+            return client.searchScroll(request);
         } catch (IOException e) {
             throw new NuxeoException(e);
         }
@@ -324,7 +369,7 @@ public class ESRestClient implements ESClient {
     @Override
     public GetResponse get(GetRequest request) {
         try {
-            return client.get(request, RequestOptions.DEFAULT);
+            return client.get(request);
         } catch (IOException e) {
             throw new NuxeoException(e);
         }
@@ -333,7 +378,7 @@ public class ESRestClient implements ESClient {
     @Override
     public IndexResponse index(IndexRequest request) {
         try {
-            return client.index(request, RequestOptions.DEFAULT);
+            return client.index(request);
         } catch (ElasticsearchStatusException e) {
             if (RestStatus.CONFLICT.equals(e.status())) {
                 throw new ConcurrentUpdateException(e);
@@ -351,11 +396,11 @@ public class ESRestClient implements ESClient {
                 log.debug(String.format("Clearing scroll ids: %s",
                         Arrays.toString(request.getScrollIds().toArray())));
             }
-            return client.clearScroll(request, RequestOptions.DEFAULT);
+            return client.clearScroll(request);
         } catch (ElasticsearchStatusException e) {
             if (RestStatus.NOT_FOUND.equals(e.status())) {
                 if (log.isDebugEnabled()) {
-                    log.debug(String.format("Scroll ids not found, they have certainly been already closed: %s",
+                    log.debug(String.format("Scroll ids not found, they have certainly been already closed",
                             Arrays.toString(request.getScrollIds().toArray())));
                 }
                 return new ClearScrollResponse(true, 0);
@@ -367,9 +412,8 @@ public class ESRestClient implements ESClient {
     }
 
     @Override
-    public BulkProcessor.Builder bulkProcessorBuilder(BulkProcessor.Listener bulkListener) {
-        return BulkProcessor.builder((request, listener) -> client.bulkAsync(request, RequestOptions.DEFAULT, listener),
-                bulkListener);
+    public BulkProcessor.Builder bulkProcessorBuilder(BulkProcessor.Listener listener) {
+        return BulkProcessor.builder(client::bulkAsync, listener);
     }
 
     @Override

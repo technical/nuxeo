@@ -36,7 +36,6 @@ import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.SSLContexts;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -252,7 +251,7 @@ public class ESRestClientFactory implements ESClientFactory {
     protected void checkConnection(RestHighLevelClient client) {
         boolean ping = false;
         try {
-            ping = client.ping(RequestOptions.DEFAULT);
+            ping = client.ping();
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }
