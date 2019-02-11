@@ -108,6 +108,14 @@
       <artifactId>nuxeo-webengine-base</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.opencensus</groupId>
+      <artifactId>opencensus-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.opencensus</groupId>
+      <artifactId>opencensus-impl</artifactId>
+    </dependency>
     <!-- only for tests -->
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
