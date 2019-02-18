@@ -44,7 +44,8 @@ public class TestSerialization {
 
     @Test
     public void testQuery1() throws Exception {
-        check("SELECT dc:title, dc:dublincore FROM Document " + "WHERE dc:created > TIMESTAMP '2007-02-03 0:0'");
+        check("SELECT dc:title, dc:dublincore FROM Document "
+                + "WHERE dc:created > TIMESTAMP '2007-01-30T01:02:03.000+04:56'");
     }
 
     @Test

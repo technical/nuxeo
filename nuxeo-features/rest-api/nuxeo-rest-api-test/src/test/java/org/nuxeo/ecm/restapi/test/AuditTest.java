@@ -21,9 +21,12 @@ package org.nuxeo.ecm.restapi.test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.nuxeo.common.utils.DateUtils.format;
 
 import java.io.IOException;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -33,8 +36,6 @@ import javax.inject.Inject;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
-import org.joda.time.DateTime;
-import org.joda.time.format.ISODateTimeFormat;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.nuxeo.ecm.core.api.DocumentModel;
@@ -187,27 +188,27 @@ public class AuditTest extends BaseTest {
     public void shouldFilterLogEntriesOnEventDate() throws Exception {
         DocumentModel doc = RestServerInit.getFile(1, session);
 
-        DateTime firstDate = new DateTime();
-        DateTime secondDate = firstDate.plusDays(10);
+        ZonedDateTime firstDate = ZonedDateTime.now();
+        ZonedDateTime secondDate = firstDate.plusDays(10);
 
         List<LogEntry> logEntries = new ArrayList<>();
         LogEntry logEntry = auditLogger.newLogEntry();
         logEntry.setDocUUID(doc.getRef());
         logEntry.setCategory("One");
         logEntry.setEventId("firstEvent");
-        logEntry.setEventDate(firstDate.toDate());
+        logEntry.setEventDate(Date.from(firstDate.toInstant()));
         logEntries.add(logEntry);
         logEntry = auditLogger.newLogEntry();
         logEntry.setDocUUID(doc.getRef());
         logEntry.setCategory("One");
         logEntry.setEventId("secondEvent");
-        logEntry.setEventDate(firstDate.toDate());
+        logEntry.setEventDate(Date.from(firstDate.toInstant()));
         logEntries.add(logEntry);
         logEntry = auditLogger.newLogEntry();
         logEntry.setDocUUID(doc.getRef());
         logEntry.setCategory("One");
         logEntry.setEventId("firstEvent");
-        logEntry.setEventDate(secondDate.toDate());
+        logEntry.setEventDate(Date.from(secondDate.toInstant()));
         logEntries.add(logEntry);
         auditLogger.addLogEntries(logEntries);
 
@@ -216,7 +217,7 @@ public class AuditTest extends BaseTest {
 
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.putSingle("category", "One");
-        queryParams.add("startEventDate", ISODateTimeFormat.date().print(firstDate.minusDays(1)));
+        queryParams.add("startEventDate", format(firstDate.minusDays(1)));
         try (CloseableClientResponse response = getResponse(BaseTest.RequestType.GET,
                 "id/" + doc.getId() + "/@" + AuditAdapter.NAME, queryParams)) {
             assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
@@ -227,8 +228,8 @@ public class AuditTest extends BaseTest {
 
         queryParams = new MultivaluedMapImpl();
         queryParams.putSingle("category", "One");
-        queryParams.add("startEventDate", ISODateTimeFormat.date().print(firstDate.minusDays(1)));
-        queryParams.add("endEventDate", ISODateTimeFormat.date().print(secondDate.minusDays(1)));
+        queryParams.add("startEventDate", format(firstDate.minusDays(1)));
+        queryParams.add("endEventDate", format(secondDate.minusDays(1)));
         try (CloseableClientResponse response = getResponse(BaseTest.RequestType.GET,
                 "id/" + doc.getId() + "/@" + AuditAdapter.NAME, queryParams)) {
             assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
@@ -239,8 +240,8 @@ public class AuditTest extends BaseTest {
 
         queryParams = new MultivaluedMapImpl();
         queryParams.putSingle("category", "One");
-        queryParams.add("startEventDate", DateParser.formatW3CDateTime(firstDate.minusDays(1).toDate()));
-        queryParams.add("endEventDate", DateParser.formatW3CDateTime(secondDate.minusDays(1).toDate()));
+        queryParams.add("startEventDate", format(firstDate.minusDays(1)));
+        queryParams.add("endEventDate", format(secondDate.minusDays(1)));
         try (CloseableClientResponse response = getResponse(BaseTest.RequestType.GET,
                 "id/" + doc.getId() + "/@" + AuditAdapter.NAME, queryParams)) {
             assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
@@ -251,8 +252,8 @@ public class AuditTest extends BaseTest {
 
         queryParams = new MultivaluedMapImpl();
         queryParams.putSingle("category", "One");
-        queryParams.add("startEventDate", ISODateTimeFormat.date().print(firstDate.plusDays(1)));
-        queryParams.add("endEventDate", ISODateTimeFormat.date().print(secondDate.plusDays(1)));
+        queryParams.add("startEventDate", format(firstDate.plusDays(1)));
+        queryParams.add("endEventDate", format(secondDate.plusDays(1)));
         try (CloseableClientResponse response = getResponse(BaseTest.RequestType.GET,
                 "id/" + doc.getId() + "/@" + AuditAdapter.NAME, queryParams)) {
             assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
@@ -266,8 +267,8 @@ public class AuditTest extends BaseTest {
     public void shouldFilterLogEntriesOnMultipleCriteria() throws Exception {
         DocumentModel doc = RestServerInit.getFile(1, session);
 
-        DateTime firstDate = new DateTime();
-        DateTime secondDate = firstDate.plusDays(10);
+        ZonedDateTime firstDate = ZonedDateTime.now();
+        ZonedDateTime secondDate = firstDate.plusDays(10);
 
         List<LogEntry> logEntries = new ArrayList<>();
         LogEntry logEntry = auditLogger.newLogEntry();
@@ -275,28 +276,28 @@ public class AuditTest extends BaseTest {
         logEntry.setCategory("One");
         logEntry.setEventId("firstEvent");
         logEntry.setPrincipalName("bender");
-        logEntry.setEventDate(firstDate.toDate());
+        logEntry.setEventDate(Date.from(firstDate.toInstant()));
         logEntries.add(logEntry);
         logEntry = auditLogger.newLogEntry();
         logEntry.setDocUUID(doc.getRef());
         logEntry.setCategory("One");
         logEntry.setEventId("secondEvent");
         logEntry.setPrincipalName("leela");
-        logEntry.setEventDate(firstDate.toDate());
+        logEntry.setEventDate(Date.from(firstDate.toInstant()));
         logEntries.add(logEntry);
         logEntry = auditLogger.newLogEntry();
         logEntry.setDocUUID(doc.getRef());
         logEntry.setCategory("One");
         logEntry.setEventId("firstEvent");
         logEntry.setPrincipalName("leela");
-        logEntry.setEventDate(secondDate.toDate());
+        logEntry.setEventDate(Date.from(secondDate.toInstant()));
         logEntries.add(logEntry);
         logEntry = auditLogger.newLogEntry();
         logEntry.setDocUUID(doc.getRef());
         logEntry.setCategory("One");
         logEntry.setEventId("thirdEvent");
         logEntry.setPrincipalName("leela");
-        logEntry.setEventDate(secondDate.toDate());
+        logEntry.setEventDate(Date.from(secondDate.toInstant()));
         logEntries.add(logEntry);
         auditLogger.addLogEntries(logEntries);
 
@@ -330,8 +331,8 @@ public class AuditTest extends BaseTest {
         queryParams.putSingle("category", "One");
         queryParams.add("principalName", "leela");
         queryParams.add("eventId", "thirdEvent");
-        queryParams.add("startEventDate", ISODateTimeFormat.dateTime().print(firstDate.plusDays(1)));
-        queryParams.add("endEventDate", ISODateTimeFormat.dateTime().print(secondDate.minus(1)));
+        queryParams.add("startEventDate", format(firstDate.plusDays(1)));
+        queryParams.add("endEventDate", format(secondDate.minusNanos(1000)));
         try (CloseableClientResponse response = getResponse(BaseTest.RequestType.GET,
                 "id/" + doc.getId() + "/@" + AuditAdapter.NAME, queryParams)) {
             assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
