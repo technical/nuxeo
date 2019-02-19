@@ -27,7 +27,9 @@ import org.nuxeo.ecm.core.schema.utils.DateParser;
 
 /**
  * @since 7.4
+ * @deprecated since 11.1 because unused
  */
+@Deprecated
 public class StringToCalendar implements TypeAdapter {
 
     @Override

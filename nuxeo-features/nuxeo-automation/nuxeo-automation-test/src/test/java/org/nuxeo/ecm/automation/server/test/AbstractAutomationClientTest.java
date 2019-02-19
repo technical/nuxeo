@@ -28,6 +28,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.nuxeo.common.utils.DateUtils.format;
+import static org.nuxeo.common.utils.DateUtils.parse;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -55,7 +57,6 @@ import org.nuxeo.ecm.automation.client.Session;
 import org.nuxeo.ecm.automation.client.adapters.DocumentService;
 import org.nuxeo.ecm.automation.client.jaxrs.impl.HttpAutomationClient;
 import org.nuxeo.ecm.automation.client.model.Blobs;
-import org.nuxeo.ecm.automation.client.model.DateUtils;
 import org.nuxeo.ecm.automation.client.model.DocRef;
 import org.nuxeo.ecm.automation.client.model.DocRefs;
 import org.nuxeo.ecm.automation.client.model.Document;
@@ -254,7 +255,7 @@ public abstract class AbstractAutomationClientTest {
                                 .execute();
         assertEquals("updated", doc.getString("dc:description"));
 
-        String now = DateUtils.formatDate(new Date());
+        String now = format(new Date());
         doc = (Document) session.newRequest(UpdateDocument.ID)
                                 .setHeader(Constants.HEADER_NX_SCHEMAS, "*")
                                 .setInput(new DocRef("/automation-test-folder/docsInput/note1"))
@@ -265,7 +266,7 @@ public abstract class AbstractAutomationClientTest {
         // are encoding differently the date (for instance the client add the
         // milliseconds field but the server not)
         // should instead compare date objects up to the second field.
-        assertThat(doc.getDate("dc:valid"), is(DateUtils.parseDate(now)));
+        assertThat(doc.getDate("dc:valid"), is(parse(now)));
     }
 
     @Test

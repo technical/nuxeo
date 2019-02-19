@@ -51,6 +51,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.nuxeo.common.Environment;
+import org.nuxeo.common.utils.DateUtils;
 import org.nuxeo.common.utils.FileUtils;
 import org.nuxeo.ecm.automation.AutomationService;
 import org.nuxeo.ecm.automation.OperationException;
@@ -63,7 +64,6 @@ import org.nuxeo.ecm.automation.client.adapters.DocumentService;
 import org.nuxeo.ecm.automation.client.jaxrs.spi.JsonMarshalling;
 import org.nuxeo.ecm.automation.client.jaxrs.spi.marshallers.PojoMarshaller;
 import org.nuxeo.ecm.automation.client.model.Blob;
-import org.nuxeo.ecm.automation.client.model.DateUtils;
 import org.nuxeo.ecm.automation.client.model.DocRef;
 import org.nuxeo.ecm.automation.client.model.Document;
 import org.nuxeo.ecm.automation.client.model.IdRef;
@@ -82,7 +82,6 @@ import org.nuxeo.ecm.automation.core.operations.document.UpdateDocument;
 import org.nuxeo.ecm.automation.core.operations.notification.SendMail;
 import org.nuxeo.ecm.automation.core.operations.services.AuditLog;
 import org.nuxeo.ecm.automation.core.operations.services.AuditPageProviderOperation;
-import org.nuxeo.ecm.automation.core.operations.services.DocumentPageProviderOperation;
 import org.nuxeo.ecm.automation.core.operations.services.query.DocumentPaginatedQuery;
 import org.nuxeo.ecm.automation.core.operations.traces.JsonStackToggleDisplayOperation;
 import org.nuxeo.ecm.automation.io.services.codec.ObjectCodecService;
@@ -149,8 +148,9 @@ public class EmbeddedAutomationClientTest extends AbstractAutomationClientTest {
         // correctly Document Adapter Codec in Test scope (to take into account
         // of document adapters contributed into test) -> see execution order
         // here: org.nuxeo.runtime.test.runner.RuntimeFeature.start()
-        ComponentInstance componentInstance = Framework.getRuntime().getComponentInstance(
-                "org.nuxeo.ecm.automation.server.AutomationServer");
+        ComponentInstance componentInstance = Framework.getRuntime()
+                                                       .getComponentInstance(
+                                                               "org.nuxeo.ecm.automation.server.AutomationServer");
         AutomationServerComponent automationServerComponent = (AutomationServerComponent) componentInstance.getInstance();
         automationServerComponent.start(componentInstance);
     }
@@ -325,7 +325,7 @@ public class EmbeddedAutomationClientTest extends AbstractAutomationClientTest {
         r = session.newRequest(ReturnOperation.ID).setInput(1.1d).execute();
         assertThat(((Number) r).doubleValue(), IsCloseTo.closeTo(1.1d, 0.1));
 
-        Date now = DateUtils.parseDate(DateUtils.formatDate(new Date(0)));
+        Date now = Date.from(DateUtils.parse(DateUtils.format(new Date(0))).toInstant());
         r = session.newRequest(ReturnOperation.ID).setInput(now).execute();
         assertThat(r, is(now));
     }
@@ -1041,7 +1041,8 @@ public class EmbeddedAutomationClientTest extends AbstractAutomationClientTest {
         } catch (RemoteException e) {
             String expectedMsg = String.format("Failed to invoke operation: Document.AddPermission, "
                     + "Failed to invoke operation Document.AddPermission with aliases [Document.AddACL], "
-                    + "The following set of User or Group names do not exist: [%s]. Please provide valid ones.", username);
+                    + "The following set of User or Group names do not exist: [%s]. Please provide valid ones.",
+                    username);
             assertEquals(e.getMessage(), expectedMsg, e.getMessage());
         }
     }

@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.util.Date;
 
 import org.nuxeo.ecm.automation.client.jaxrs.spi.JsonMarshaller;
-import org.nuxeo.ecm.automation.client.model.DateParser;
+import org.nuxeo.ecm.core.schema.utils.DateParser;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;

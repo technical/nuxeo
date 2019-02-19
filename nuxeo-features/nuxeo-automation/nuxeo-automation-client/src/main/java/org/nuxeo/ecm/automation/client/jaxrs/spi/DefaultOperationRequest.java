@@ -18,8 +18,9 @@
  */
 package org.nuxeo.ecm.automation.client.jaxrs.spi;
 
+import static org.nuxeo.common.utils.DateUtils.format;
+
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -29,7 +30,6 @@ import java.util.Map;
 
 import org.nuxeo.ecm.automation.client.OperationRequest;
 import org.nuxeo.ecm.automation.client.Session;
-import org.nuxeo.ecm.automation.client.model.DateUtils;
 import org.nuxeo.ecm.automation.client.model.Document;
 import org.nuxeo.ecm.automation.client.model.OperationDocumentation;
 import org.nuxeo.ecm.automation.client.model.OperationDocumentation.Param;
@@ -59,11 +59,12 @@ public class DefaultOperationRequest implements OperationRequest {
     public DefaultOperationRequest(Session session, OperationDocumentation op, Map<String, Object> ctx) {
         this.session = session;
         this.op = op;
-        params = new HashMap<String, Object>();
-        headers = new HashMap<String, String>();
+        params = new HashMap<>();
+        headers = new HashMap<>();
         this.ctx = ctx;
     }
 
+    @Override
     public Session getSession() {
         return session;
     }
@@ -87,7 +88,7 @@ public class DefaultOperationRequest implements OperationRequest {
     }
 
     public List<String> getParamNames() {
-        List<String> result = new ArrayList<String>();
+        List<String> result = new ArrayList<>();
         for (Param param : op.params) {
             result.add(param.name);
         }
@@ -103,6 +104,7 @@ public class DefaultOperationRequest implements OperationRequest {
         return null;
     }
 
+    @Override
     public OperationRequest setInput(Object input) {
         if (input == null) {
             checkInput("void");
@@ -113,14 +115,17 @@ public class DefaultOperationRequest implements OperationRequest {
         return this;
     }
 
+    @Override
     public Object getInput() {
         return input;
     }
 
+    @Override
     public String getUrl() {
         return session.getClient().getBaseUrl() + op.url;
     }
 
+    @Override
     public OperationRequest set(String key, Object value) {
         Param param = getParam(key);
         if (param == null) {
@@ -139,9 +144,9 @@ public class DefaultOperationRequest implements OperationRequest {
         // "+value.getParamType());
         // }
         if (value.getClass() == Date.class) {
-            params.put(key, DateUtils.formatDate((Date) value));
-        } else if (value instanceof Calendar){
-            params.put(key, DateUtils.formatDate(((Calendar) value).getTime()));
+            params.put(key, format((Date) value));
+        } else if (value instanceof Calendar) {
+            params.put(key, format(((Calendar) value).getTime()));
         } else if ("properties".equals(key) && value instanceof Document) {
             // Handle document parameter in case of properties - and bind it to
             // properties
@@ -158,28 +163,34 @@ public class DefaultOperationRequest implements OperationRequest {
         return this;
     }
 
+    @Override
     public OperationRequest setContextProperty(String key, Object value) {
         ctx.put(key, value);
         return this;
     }
 
+    @Override
     public Map<String, Object> getContextParameters() {
         return ctx;
     }
 
+    @Override
     public Map<String, Object> getParameters() {
         return params;
     }
 
+    @Override
     public Object execute() throws IOException {
         return session.execute(this);
     }
 
+    @Override
     public OperationRequest setHeader(String key, String value) {
         headers.put(key, value);
         return this;
     }
 
+    @Override
     public Map<String, String> getHeaders() {
         return headers;
     }

@@ -24,11 +24,15 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
+import org.nuxeo.common.utils.DateUtils;
+
 /**
  * Parse / format ISO 8601 dates.
  *
  * @author "Stephane Lacoin [aka matic] <slacoin at nuxeo.com>"
+ * @deprecated since 11.1 use {@link org.nuxeo.common.utils.DateUtils} instead
  */
+@Deprecated
 public class DateParser {
 
     /**
@@ -82,14 +86,7 @@ public class DateParser {
     }
 
     public static Date parseW3CDateTime(String str) {
-        if (str == null || "".equals(str)) {
-            return null;
-        }
-        try {
-            return parse(str).getTime();
-        } catch (ParseException e) {
-            throw new IllegalArgumentException("Failed to parse ISO 8601 date: " + str, e);
-        }
+        return Date.from(DateUtils.parse(str).toInstant());
     }
 
     /**
@@ -99,12 +96,14 @@ public class DateParser {
      * @return
      */
     public static String formatW3CDateTime(Date date) {
-        if (date == null) {
-            return null;
-        }
-        Calendar cal = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
-        cal.setTime(date);
-        return formatW3CDateTime(cal);
+        return DateUtils.format(date);
+    }
+
+    /**
+     * @since 11.1
+     */
+    public static String formatW3CDateTimeMs(Date date) {
+        return DateUtils.format(date);
     }
 
     /**
@@ -112,18 +111,10 @@ public class DateParser {
      *
      * @param calendar
      * @return
-     *
      * @since 7.3
      */
     public static String formatW3CDateTime(Calendar calendar) {
-        if (calendar == null) {
-            return null;
-        }
-        return String.format(W3C_DATE_FORMAT, calendar.get(Calendar.YEAR),
-                calendar.get(Calendar.MONTH) + 1, calendar.get(Calendar.DATE),
-                calendar.get(Calendar.HOUR_OF_DAY),
-                calendar.get(Calendar.MINUTE), calendar.get(Calendar.SECOND),
-                calendar.get(Calendar.MILLISECOND));
+        return DateUtils.format(calendar);
     }
 
     private final static int readYear(Calendar cal, String str, int off) throws ParseException {
