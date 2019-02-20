@@ -5248,6 +5248,7 @@
           <generateGitPropertiesFile>true</generateGitPropertiesFile>
           <generateGitPropertiesFilename>${project.build.outputDirectory}/src/main/resources/META-INF/git.properties</generateGitPropertiesFilename>
           <failOnNoGitDirectory>false</failOnNoGitDirectory>
+          <commitIdGenerationMode>full</commitIdGenerationMode>
           <gitDescribe>
             <tags>true</tags>
             <forceLongFormat>true</forceLongFormat>
