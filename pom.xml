@@ -5155,26 +5155,6 @@
         <!-- </additionalConfig> -->
         <!-- </configuration> -->
       </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>buildnumber-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>validate</phase>
-            <goals>
-              <goal>create</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <format>{0,date,yyyyMMdd-HHmmss}</format>
-          <items>
-            <item>timestamp</item>
-          </items>
-          <doCheck>false</doCheck>
-          <doUpdate>false</doUpdate>
-        </configuration>
-      </plugin>
       <!-- DEPRECATED: ECR provides usable versions for RCP -->
       <!-- <plugin> -->
       <!-- <groupId>org.apache.maven.plugins</groupId> -->
@@ -5263,14 +5243,19 @@
       <plugin>
         <groupId>pl.project13.maven</groupId>
         <artifactId>git-commit-id-plugin</artifactId>
-        <version>2.2.4</version>
+        <version>2.2.6</version>
         <configuration>
           <generateGitPropertiesFile>true</generateGitPropertiesFile>
           <generateGitPropertiesFilename>${project.build.outputDirectory}/src/main/resources/META-INF/git.properties</generateGitPropertiesFilename>
+          <failOnNoGitDirectory>false</failOnNoGitDirectory>
+          <gitDescribe>
+            <tags>true</tags>
+            <forceLongFormat>true</forceLongFormat>
+          </gitDescribe>
           <includeOnlyProperties>
             <includeOnlyProperty>^git.branch$</includeOnlyProperty>
             <includeOnlyProperty>^git.build.version$</includeOnlyProperty>
-            <includeOnlyProperty>^git.commit.id$</includeOnlyProperty>
+            <includeOnlyProperty>^git.commit.id.full$</includeOnlyProperty>
             <includeOnlyProperty>^git.tags=</includeOnlyProperty>
           </includeOnlyProperties>
         </configuration>
@@ -5280,7 +5265,7 @@
             <goals>
               <goal>revision</goal>
             </goals>
-            <phase>package</phase>
+            <phase>initialize</phase>
           </execution>
         </executions>
       </plugin>
@@ -6077,11 +6062,6 @@
           <configuration>
             <preparationGoals>clean install</preparationGoals>
           </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>buildnumber-maven-plugin</artifactId>
-          <version>1.2</version>
         </plugin>
         <plugin>
           <groupId>com.versioneye</groupId>
