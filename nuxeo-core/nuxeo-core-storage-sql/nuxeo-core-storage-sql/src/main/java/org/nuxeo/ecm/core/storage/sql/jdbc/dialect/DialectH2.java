@@ -33,9 +33,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.nuxeo.common.utils.StringUtils;
-import org.nuxeo.ecm.core.NXCore;
 import org.nuxeo.ecm.core.api.security.SecurityConstants;
+import org.nuxeo.ecm.core.security.SecurityService;
 import org.nuxeo.ecm.core.storage.FulltextQueryAnalyzer;
 import org.nuxeo.ecm.core.storage.FulltextQueryAnalyzer.FulltextQuery;
 import org.nuxeo.ecm.core.storage.sql.ColumnType;
@@ -46,6 +45,7 @@ import org.nuxeo.ecm.core.storage.sql.jdbc.db.Column;
 import org.nuxeo.ecm.core.storage.sql.jdbc.db.Database;
 import org.nuxeo.ecm.core.storage.sql.jdbc.db.Join;
 import org.nuxeo.ecm.core.storage.sql.jdbc.db.Table;
+import org.nuxeo.runtime.api.Framework;
 
 /**
  * H2-specific dialect.
@@ -243,7 +243,7 @@ public class DialectH2 extends Dialect {
                         fulltextQuery, // param
                         String.format("%s.KEY", quotedTableAlias), // on1
                         mainColumn.getFullQuotedName() // on2
-        ));
+                ));
         info.whereExpr = String.format("%s.KEY IS NOT NULL", quotedTableAlias);
         info.scoreExpr = "1";
         info.scoreAlias = "_NXSCORE" + nthSuffix;
@@ -367,7 +367,8 @@ public class DialectH2 extends Dialect {
     public Map<String, Serializable> getSQLStatementsProperties(Model model, Database database) {
         Map<String, Serializable> properties = new HashMap<>();
         properties.put("idType", "VARCHAR(36)");
-        String[] permissions = NXCore.getSecurityService().getPermissionsToCheck(SecurityConstants.BROWSE);
+        String[] permissions = Framework.getService(SecurityService.class)
+                                        .getPermissionsToCheck(SecurityConstants.BROWSE);
         List<String> permsList = new LinkedList<>();
         for (String perm : permissions) {
             permsList.add("('" + perm + "')");
