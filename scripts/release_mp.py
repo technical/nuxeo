@@ -292,7 +292,7 @@ class ReleaseMP(object):
       """ Check if instance of list """
       if isinstance(tab_mp, (list, tuple)):
         return(1);
-      else
+      else:
         raise AssertionError(tab_mp_upload + " is not an instance of list")
 
     def upload(self, url, marketplace, dryrun=False, owner=None):
